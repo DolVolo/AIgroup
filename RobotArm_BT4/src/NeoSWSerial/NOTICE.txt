@@ -1,0 +1,9 @@
+NeoSWSerial 3.0.5 by SlashDevin
+https://github.com/SlashDevin/NeoSWSerial
+License: GNU General Public License v3 or later (see header of NeoSWSerial.cpp)
+
+Bundled here so the sketch compiles without installing the library.
+Only change: NeoSWSerial.cpp includes "NeoSWSerial.h" instead of <NeoSWSerial.h>.
+
+ใช้แทน SoftwareSerial เพราะ SoftwareSerial ปิดอินเทอร์รัปต์ตลอดเวลาที่รับข้อมูล
+ทำให้สัญญาณเซอร์โวผิดเพี้ยน (เซอร์โวตัวอื่นกระตุกตอนรับคำสั่งจากบลูทูธ)

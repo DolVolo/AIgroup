@@ -1,0 +1,575 @@
+<xml xmlns="http://www.w3.org/1999/xhtml">
+  <block type="global_declaration" x="20" y="20">
+    <comment pinned="false" h="120" w="300">ตัวแปรเก็บองศาล่าสุดที่ส่งไปแล้วของเซอร์โว 4 ตัว [ฐานหมุน, ไหล่, ข้อศอก, มือจับ] ใช้เช็กว่าองศาเปลี่ยนจริงก่อนส่ง จะได้ไม่ส่งคำสั่งซ้ำจนบอร์ดรับไม่ทัน</comment>
+    <field name="NAME">angles</field>
+    <value name="VALUE">
+      <block type="lists_create_with">
+        <mutation items="4"></mutation>
+        <value name="ADD0"><block type="math_number"><field name="NUM">90</field></block></value>
+        <value name="ADD1"><block type="math_number"><field name="NUM">90</field></block></value>
+        <value name="ADD2"><block type="math_number"><field name="NUM">90</field></block></value>
+        <value name="ADD3"><block type="math_number"><field name="NUM">90</field></block></value>
+      </block>
+    </value>
+  </block>
+
+  <block type="procedures_defnoreturn" x="20" y="120">
+    <comment pinned="false" h="120" w="300">ขั้นตอน moveServo: รับเลขเซอร์โว (n) และองศา (pos) ถ้าองศาต่างจากครั้งก่อน จะจำค่าใหม่ไว้ แล้วส่งข้อความ "S&lt;n&gt;:&lt;องศา&gt;\n" ผ่าน BLE ไปที่ Service FFE0 / Characteristic FFE1 (ช่องรับส่งข้อมูลของโมดูล HM-10/BT05) เฉพาะตอนที่เชื่อมต่ออยู่</comment>
+    <mutation>
+      <arg name="n"></arg>
+      <arg name="pos"></arg>
+    </mutation>
+    <field name="NAME">moveServo</field>
+    <field name="VAR0">n</field>
+    <field name="VAR1">pos</field>
+    <statement name="STACK">
+      <block type="controls_if">
+        <value name="IF0">
+          <block type="math_compare">
+            <field name="OP">NEQ</field>
+            <value name="A">
+              <block type="math_round">
+                <field name="OP">ROUND</field>
+                <value name="NUM"><block type="lexical_variable_get"><field name="VAR">pos</field></block></value>
+              </block>
+            </value>
+            <value name="B">
+              <block type="lists_select_item">
+                <value name="LIST"><block type="lexical_variable_get"><field name="VAR">global angles</field></block></value>
+                <value name="NUM"><block type="lexical_variable_get"><field name="VAR">n</field></block></value>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO0">
+          <block type="lists_replace_item">
+            <value name="LIST"><block type="lexical_variable_get"><field name="VAR">global angles</field></block></value>
+            <value name="NUM"><block type="lexical_variable_get"><field name="VAR">n</field></block></value>
+            <value name="ITEM">
+              <block type="math_round">
+                <field name="OP">ROUND</field>
+                <value name="NUM"><block type="lexical_variable_get"><field name="VAR">pos</field></block></value>
+              </block>
+            </value>
+            <next>
+              <block type="controls_if">
+                <value name="IF0">
+                  <block type="component_set_get">
+                    <mutation component_type="BluetoothLE" set_or_get="get" property_name="IsDeviceConnected" is_generic="false" instance_name="BluetoothLE1"></mutation>
+                    <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+                    <field name="PROP">IsDeviceConnected</field>
+                  </block>
+                </value>
+                <statement name="DO0">
+                  <block type="component_method">
+                    <mutation component_type="BluetoothLE" method_name="WriteStrings" is_generic="false" instance_name="BluetoothLE1"></mutation>
+                    <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+                    <value name="ARG0"><block type="text"><field name="TEXT">0000FFE0-0000-1000-8000-00805F9B34FB</field></block></value>
+                    <value name="ARG1"><block type="text"><field name="TEXT">0000FFE1-0000-1000-8000-00805F9B34FB</field></block></value>
+                    <value name="ARG2"><block type="logic_boolean"><field name="BOOL">FALSE</field></block></value>
+                    <value name="ARG3">
+                      <block type="text_join">
+                        <mutation items="5"></mutation>
+                        <value name="ADD0"><block type="text"><field name="TEXT">S</field></block></value>
+                        <value name="ADD1"><block type="lexical_variable_get"><field name="VAR">n</field></block></value>
+                        <value name="ADD2"><block type="text"><field name="TEXT">:</field></block></value>
+                        <value name="ADD3">
+                          <block type="math_round">
+                            <field name="OP">ROUND</field>
+                            <value name="NUM"><block type="lexical_variable_get"><field name="VAR">pos</field></block></value>
+                          </block>
+                        </value>
+                        <value name="ADD4"><block type="text"><field name="TEXT">\n</field></block></value>
+                      </block>
+                    </value>
+                  </block>
+                </statement>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="20" y="520">
+    <comment pinned="false" h="120" w="300">เมื่อเลื่อนแถบฐานหมุน: อัปเดตตัวเลของศาบนจอ แล้วส่งคำสั่ง S1 ไปที่บอร์ด</comment>
+    <mutation component_type="Slider" is_generic="false" instance_name="SliderBase" event_name="PositionChanged"></mutation>
+    <field name="COMPONENT_SELECTOR">SliderBase</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Label" set_or_get="set" property_name="Text" is_generic="false" instance_name="LabelBase"></mutation>
+        <field name="COMPONENT_SELECTOR">LabelBase</field>
+        <field name="PROP">Text</field>
+        <value name="VALUE">
+          <block type="text_join">
+            <mutation items="3"></mutation>
+            <value name="ADD0"><block type="text"><field name="TEXT">ฐานหมุน: </field></block></value>
+            <value name="ADD1">
+              <block type="math_round">
+                <field name="OP">ROUND</field>
+                <value name="NUM"><block type="lexical_variable_get"><mutation><eventparam name="thumbPosition"></eventparam></mutation><field name="VAR">thumbPosition</field></block></value>
+              </block>
+            </value>
+            <value name="ADD2"><block type="text"><field name="TEXT">°</field></block></value>
+          </block>
+        </value>
+        <next>
+          <block type="procedures_callnoreturn">
+            <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+            <field name="PROCNAME">moveServo</field>
+            <value name="ARG0"><block type="math_number"><field name="NUM">1</field></block></value>
+            <value name="ARG1"><block type="lexical_variable_get"><mutation><eventparam name="thumbPosition"></eventparam></mutation><field name="VAR">thumbPosition</field></block></value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="20" y="680">
+    <comment pinned="false" h="120" w="300">เมื่อเลื่อนแถบไหล่: อัปเดตตัวเลของศาบนจอ แล้วส่งคำสั่ง S2 ไปที่บอร์ด</comment>
+    <mutation component_type="Slider" is_generic="false" instance_name="SliderShoulder" event_name="PositionChanged"></mutation>
+    <field name="COMPONENT_SELECTOR">SliderShoulder</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Label" set_or_get="set" property_name="Text" is_generic="false" instance_name="LabelShoulder"></mutation>
+        <field name="COMPONENT_SELECTOR">LabelShoulder</field>
+        <field name="PROP">Text</field>
+        <value name="VALUE">
+          <block type="text_join">
+            <mutation items="3"></mutation>
+            <value name="ADD0"><block type="text"><field name="TEXT">ไหล่: </field></block></value>
+            <value name="ADD1">
+              <block type="math_round">
+                <field name="OP">ROUND</field>
+                <value name="NUM"><block type="lexical_variable_get"><mutation><eventparam name="thumbPosition"></eventparam></mutation><field name="VAR">thumbPosition</field></block></value>
+              </block>
+            </value>
+            <value name="ADD2"><block type="text"><field name="TEXT">°</field></block></value>
+          </block>
+        </value>
+        <next>
+          <block type="procedures_callnoreturn">
+            <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+            <field name="PROCNAME">moveServo</field>
+            <value name="ARG0"><block type="math_number"><field name="NUM">2</field></block></value>
+            <value name="ARG1"><block type="lexical_variable_get"><mutation><eventparam name="thumbPosition"></eventparam></mutation><field name="VAR">thumbPosition</field></block></value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="20" y="840">
+    <comment pinned="false" h="120" w="300">เมื่อเลื่อนแถบข้อศอก: อัปเดตตัวเลของศาบนจอ แล้วส่งคำสั่ง S3 ไปที่บอร์ด</comment>
+    <mutation component_type="Slider" is_generic="false" instance_name="SliderElbow" event_name="PositionChanged"></mutation>
+    <field name="COMPONENT_SELECTOR">SliderElbow</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Label" set_or_get="set" property_name="Text" is_generic="false" instance_name="LabelElbow"></mutation>
+        <field name="COMPONENT_SELECTOR">LabelElbow</field>
+        <field name="PROP">Text</field>
+        <value name="VALUE">
+          <block type="text_join">
+            <mutation items="3"></mutation>
+            <value name="ADD0"><block type="text"><field name="TEXT">ข้อศอก: </field></block></value>
+            <value name="ADD1">
+              <block type="math_round">
+                <field name="OP">ROUND</field>
+                <value name="NUM"><block type="lexical_variable_get"><mutation><eventparam name="thumbPosition"></eventparam></mutation><field name="VAR">thumbPosition</field></block></value>
+              </block>
+            </value>
+            <value name="ADD2"><block type="text"><field name="TEXT">°</field></block></value>
+          </block>
+        </value>
+        <next>
+          <block type="procedures_callnoreturn">
+            <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+            <field name="PROCNAME">moveServo</field>
+            <value name="ARG0"><block type="math_number"><field name="NUM">3</field></block></value>
+            <value name="ARG1"><block type="lexical_variable_get"><mutation><eventparam name="thumbPosition"></eventparam></mutation><field name="VAR">thumbPosition</field></block></value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="20" y="1000">
+    <comment pinned="false" h="120" w="300">เมื่อเลื่อนแถบมือจับ: อัปเดตตัวเลของศาบนจอ แล้วส่งคำสั่ง S4 ไปที่บอร์ด</comment>
+    <mutation component_type="Slider" is_generic="false" instance_name="SliderGripper" event_name="PositionChanged"></mutation>
+    <field name="COMPONENT_SELECTOR">SliderGripper</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Label" set_or_get="set" property_name="Text" is_generic="false" instance_name="LabelGripper"></mutation>
+        <field name="COMPONENT_SELECTOR">LabelGripper</field>
+        <field name="PROP">Text</field>
+        <value name="VALUE">
+          <block type="text_join">
+            <mutation items="3"></mutation>
+            <value name="ADD0"><block type="text"><field name="TEXT">มือจับ: </field></block></value>
+            <value name="ADD1">
+              <block type="math_round">
+                <field name="OP">ROUND</field>
+                <value name="NUM"><block type="lexical_variable_get"><mutation><eventparam name="thumbPosition"></eventparam></mutation><field name="VAR">thumbPosition</field></block></value>
+              </block>
+            </value>
+            <value name="ADD2"><block type="text"><field name="TEXT">°</field></block></value>
+          </block>
+        </value>
+        <next>
+          <block type="procedures_callnoreturn">
+            <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+            <field name="PROCNAME">moveServo</field>
+            <value name="ARG0"><block type="math_number"><field name="NUM">4</field></block></value>
+            <value name="ARG1"><block type="lexical_variable_get"><mutation><eventparam name="thumbPosition"></eventparam></mutation><field name="VAR">thumbPosition</field></block></value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="600" y="20">
+    <comment pinned="false" h="120" w="300">ปุ่ม 1. ค้นหา: เริ่มสแกนหาอุปกรณ์ BLE รอบๆ (ต้องเปิดบลูทูธและ GPS) แล้วบอกผู้ใช้ให้รอสักครู่</comment>
+    <mutation component_type="Button" is_generic="false" instance_name="ButtonScan" event_name="Click"></mutation>
+    <field name="COMPONENT_SELECTOR">ButtonScan</field>
+    <statement name="DO">
+      <block type="component_method">
+        <mutation component_type="BluetoothLE" method_name="StartScanning" is_generic="false" instance_name="BluetoothLE1"></mutation>
+        <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+        <next>
+          <block type="component_set_get">
+            <mutation component_type="Label" set_or_get="set" property_name="Text" is_generic="false" instance_name="LabelStatus"></mutation>
+            <field name="COMPONENT_SELECTOR">LabelStatus</field>
+            <field name="PROP">Text</field>
+            <value name="VALUE"><block type="text"><field name="TEXT">สถานะ: กำลังค้นหา... รอ 3-5 วินาที แล้วกด '2. เลือกอุปกรณ์'</field></block></value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="600" y="140">
+    <comment pinned="false" h="120" w="300">ก่อนเปิดรายการอุปกรณ์: หยุดสแกน (รายการจะได้ไม่สลับลำดับ) แล้วนำรายชื่ออุปกรณ์ที่เจอมาแสดง</comment>
+    <mutation component_type="ListPicker" is_generic="false" instance_name="ListPickerBT" event_name="BeforePicking"></mutation>
+    <field name="COMPONENT_SELECTOR">ListPickerBT</field>
+    <statement name="DO">
+      <block type="component_method">
+        <mutation component_type="BluetoothLE" method_name="StopScanning" is_generic="false" instance_name="BluetoothLE1"></mutation>
+        <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+        <next>
+          <block type="component_set_get">
+            <mutation component_type="ListPicker" set_or_get="set" property_name="ElementsFromString" is_generic="false" instance_name="ListPickerBT"></mutation>
+            <field name="COMPONENT_SELECTOR">ListPickerBT</field>
+            <field name="PROP">ElementsFromString</field>
+            <value name="VALUE">
+              <block type="component_set_get">
+                <mutation component_type="BluetoothLE" set_or_get="get" property_name="DeviceList" is_generic="false" instance_name="BluetoothLE1"></mutation>
+                <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+                <field name="PROP">DeviceList</field>
+              </block>
+            </value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="600" y="280">
+    <comment pinned="false" h="120" w="300">หลังเลือกอุปกรณ์: เชื่อมต่อกับอุปกรณ์ลำดับที่เลือก ผลลัพธ์จะไปเกิดที่เหตุการณ์ Connected</comment>
+    <mutation component_type="ListPicker" is_generic="false" instance_name="ListPickerBT" event_name="AfterPicking"></mutation>
+    <field name="COMPONENT_SELECTOR">ListPickerBT</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Label" set_or_get="set" property_name="Text" is_generic="false" instance_name="LabelStatus"></mutation>
+        <field name="COMPONENT_SELECTOR">LabelStatus</field>
+        <field name="PROP">Text</field>
+        <value name="VALUE"><block type="text"><field name="TEXT">สถานะ: กำลังเชื่อมต่อ...</field></block></value>
+        <next>
+          <block type="component_method">
+            <mutation component_type="BluetoothLE" method_name="Connect" is_generic="false" instance_name="BluetoothLE1"></mutation>
+            <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+            <value name="ARG0">
+              <block type="component_set_get">
+                <mutation component_type="ListPicker" set_or_get="get" property_name="SelectionIndex" is_generic="false" instance_name="ListPickerBT"></mutation>
+                <field name="COMPONENT_SELECTOR">ListPickerBT</field>
+                <field name="PROP">SelectionIndex</field>
+              </block>
+            </value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="600" y="400">
+    <comment pinned="false" h="120" w="300">เมื่อเชื่อมต่อสำเร็จ: แสดงชื่ออุปกรณ์ เปลี่ยนสถานะเป็นสีเขียว ล้างค่าที่จำไว้ แล้วส่งตำแหน่งแถบทั้ง 4 ตัวไปให้แขนกลขยับตามจอ</comment>
+    <mutation component_type="BluetoothLE" is_generic="false" instance_name="BluetoothLE1" event_name="Connected"></mutation>
+    <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Label" set_or_get="set" property_name="Text" is_generic="false" instance_name="LabelStatus"></mutation>
+        <field name="COMPONENT_SELECTOR">LabelStatus</field>
+        <field name="PROP">Text</field>
+        <value name="VALUE">
+          <block type="text_join">
+            <mutation items="2"></mutation>
+            <value name="ADD0"><block type="text"><field name="TEXT">สถานะ: เชื่อมต่อแล้ว </field></block></value>
+            <value name="ADD1">
+              <block type="component_set_get">
+                <mutation component_type="BluetoothLE" set_or_get="get" property_name="ConnectedDeviceName" is_generic="false" instance_name="BluetoothLE1"></mutation>
+                <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+                <field name="PROP">ConnectedDeviceName</field>
+              </block>
+            </value>
+          </block>
+        </value>
+        <next>
+          <block type="component_set_get">
+            <mutation component_type="Label" set_or_get="set" property_name="TextColor" is_generic="false" instance_name="LabelStatus"></mutation>
+            <field name="COMPONENT_SELECTOR">LabelStatus</field>
+            <field name="PROP">TextColor</field>
+            <value name="VALUE"><block type="math_number"><field name="NUM">-13730510</field></block></value>
+            <next>
+              <block type="lexical_variable_set">
+                <field name="VAR">global angles</field>
+                <value name="VALUE">
+                  <block type="lists_create_with">
+                    <mutation items="4"></mutation>
+                    <value name="ADD0"><block type="math_number"><field name="NUM">-1</field></block></value>
+                    <value name="ADD1"><block type="math_number"><field name="NUM">-1</field></block></value>
+                    <value name="ADD2"><block type="math_number"><field name="NUM">-1</field></block></value>
+                    <value name="ADD3"><block type="math_number"><field name="NUM">-1</field></block></value>
+                  </block>
+                </value>
+                <next>
+                  <block type="procedures_callnoreturn">
+                    <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+                    <field name="PROCNAME">moveServo</field>
+                    <value name="ARG0"><block type="math_number"><field name="NUM">1</field></block></value>
+                    <value name="ARG1">
+                      <block type="component_set_get">
+                        <mutation component_type="Slider" set_or_get="get" property_name="ThumbPosition" is_generic="false" instance_name="SliderBase"></mutation>
+                        <field name="COMPONENT_SELECTOR">SliderBase</field>
+                        <field name="PROP">ThumbPosition</field>
+                      </block>
+                    </value>
+                    <next>
+                      <block type="procedures_callnoreturn">
+                        <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+                        <field name="PROCNAME">moveServo</field>
+                        <value name="ARG0"><block type="math_number"><field name="NUM">2</field></block></value>
+                        <value name="ARG1">
+                          <block type="component_set_get">
+                            <mutation component_type="Slider" set_or_get="get" property_name="ThumbPosition" is_generic="false" instance_name="SliderShoulder"></mutation>
+                            <field name="COMPONENT_SELECTOR">SliderShoulder</field>
+                            <field name="PROP">ThumbPosition</field>
+                          </block>
+                        </value>
+                        <next>
+                          <block type="procedures_callnoreturn">
+                            <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+                            <field name="PROCNAME">moveServo</field>
+                            <value name="ARG0"><block type="math_number"><field name="NUM">3</field></block></value>
+                            <value name="ARG1">
+                              <block type="component_set_get">
+                                <mutation component_type="Slider" set_or_get="get" property_name="ThumbPosition" is_generic="false" instance_name="SliderElbow"></mutation>
+                                <field name="COMPONENT_SELECTOR">SliderElbow</field>
+                                <field name="PROP">ThumbPosition</field>
+                              </block>
+                            </value>
+                            <next>
+                              <block type="procedures_callnoreturn">
+                                <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+                                <field name="PROCNAME">moveServo</field>
+                                <value name="ARG0"><block type="math_number"><field name="NUM">4</field></block></value>
+                                <value name="ARG1">
+                                  <block type="component_set_get">
+                                    <mutation component_type="Slider" set_or_get="get" property_name="ThumbPosition" is_generic="false" instance_name="SliderGripper"></mutation>
+                                    <field name="COMPONENT_SELECTOR">SliderGripper</field>
+                                    <field name="PROP">ThumbPosition</field>
+                                  </block>
+                                </value>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="600" y="560">
+    <comment pinned="false" h="120" w="300">เมื่อการเชื่อมต่อหลุดหรือถูกตัด: เปลี่ยนสถานะกลับเป็นสีแดง</comment>
+    <mutation component_type="BluetoothLE" is_generic="false" instance_name="BluetoothLE1" event_name="Disconnected"></mutation>
+    <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Label" set_or_get="set" property_name="Text" is_generic="false" instance_name="LabelStatus"></mutation>
+        <field name="COMPONENT_SELECTOR">LabelStatus</field>
+        <field name="PROP">Text</field>
+        <value name="VALUE"><block type="text"><field name="TEXT">สถานะ: ยังไม่เชื่อมต่อ</field></block></value>
+        <next>
+          <block type="component_set_get">
+            <mutation component_type="Label" set_or_get="set" property_name="TextColor" is_generic="false" instance_name="LabelStatus"></mutation>
+            <field name="COMPONENT_SELECTOR">LabelStatus</field>
+            <field name="PROP">TextColor</field>
+            <value name="VALUE"><block type="math_number"><field name="NUM">-3790808</field></block></value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="600" y="680">
+    <comment pinned="false" h="120" w="300">ปุ่มตัดการเชื่อมต่อ: ยกเลิกการเชื่อมต่อ BLE (สถานะจะเปลี่ยนในเหตุการณ์ Disconnected)</comment>
+    <mutation component_type="Button" is_generic="false" instance_name="ButtonDisconnect" event_name="Click"></mutation>
+    <field name="COMPONENT_SELECTOR">ButtonDisconnect</field>
+    <statement name="DO">
+      <block type="component_method">
+        <mutation component_type="BluetoothLE" method_name="Disconnect" is_generic="false" instance_name="BluetoothLE1"></mutation>
+        <field name="COMPONENT_SELECTOR">BluetoothLE1</field>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="600" y="840">
+    <comment pinned="false" h="120" w="300">ปุ่มเปิดมือจับ: เลื่อนแถบมือจับไปที่ 150 องศา และส่งคำสั่ง S4:150 (ถ้ามือจับทำงานกลับด้าน ให้สลับเลขกับปุ่มหุบมือจับ)</comment>
+    <mutation component_type="Button" is_generic="false" instance_name="ButtonOpen" event_name="Click"></mutation>
+    <field name="COMPONENT_SELECTOR">ButtonOpen</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Slider" set_or_get="set" property_name="ThumbPosition" is_generic="false" instance_name="SliderGripper"></mutation>
+        <field name="COMPONENT_SELECTOR">SliderGripper</field>
+        <field name="PROP">ThumbPosition</field>
+        <value name="VALUE"><block type="math_number"><field name="NUM">150</field></block></value>
+        <next>
+          <block type="procedures_callnoreturn">
+            <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+            <field name="PROCNAME">moveServo</field>
+            <value name="ARG0"><block type="math_number"><field name="NUM">4</field></block></value>
+            <value name="ARG1"><block type="math_number"><field name="NUM">150</field></block></value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="600" y="960">
+    <comment pinned="false" h="120" w="300">ปุ่มหุบมือจับ: เลื่อนแถบมือจับไปที่ 60 องศา และส่งคำสั่ง S4:60</comment>
+    <mutation component_type="Button" is_generic="false" instance_name="ButtonClose" event_name="Click"></mutation>
+    <field name="COMPONENT_SELECTOR">ButtonClose</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Slider" set_or_get="set" property_name="ThumbPosition" is_generic="false" instance_name="SliderGripper"></mutation>
+        <field name="COMPONENT_SELECTOR">SliderGripper</field>
+        <field name="PROP">ThumbPosition</field>
+        <value name="VALUE"><block type="math_number"><field name="NUM">60</field></block></value>
+        <next>
+          <block type="procedures_callnoreturn">
+            <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+            <field name="PROCNAME">moveServo</field>
+            <value name="ARG0"><block type="math_number"><field name="NUM">4</field></block></value>
+            <value name="ARG1"><block type="math_number"><field name="NUM">60</field></block></value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="600" y="1080">
+    <comment pinned="false" h="120" w="300">ปุ่มกลับท่าเริ่มต้น: ตั้งแถบทั้ง 4 ตัวเป็น 90 องศา แล้ววนส่งคำสั่ง S1-S4 ที่ 90 องศา</comment>
+    <mutation component_type="Button" is_generic="false" instance_name="ButtonReset" event_name="Click"></mutation>
+    <field name="COMPONENT_SELECTOR">ButtonReset</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Slider" set_or_get="set" property_name="ThumbPosition" is_generic="false" instance_name="SliderBase"></mutation>
+        <field name="COMPONENT_SELECTOR">SliderBase</field>
+        <field name="PROP">ThumbPosition</field>
+        <value name="VALUE"><block type="math_number"><field name="NUM">90</field></block></value>
+        <next>
+          <block type="component_set_get">
+            <mutation component_type="Slider" set_or_get="set" property_name="ThumbPosition" is_generic="false" instance_name="SliderShoulder"></mutation>
+            <field name="COMPONENT_SELECTOR">SliderShoulder</field>
+            <field name="PROP">ThumbPosition</field>
+            <value name="VALUE"><block type="math_number"><field name="NUM">90</field></block></value>
+            <next>
+              <block type="component_set_get">
+                <mutation component_type="Slider" set_or_get="set" property_name="ThumbPosition" is_generic="false" instance_name="SliderElbow"></mutation>
+                <field name="COMPONENT_SELECTOR">SliderElbow</field>
+                <field name="PROP">ThumbPosition</field>
+                <value name="VALUE"><block type="math_number"><field name="NUM">90</field></block></value>
+                <next>
+                  <block type="component_set_get">
+                    <mutation component_type="Slider" set_or_get="set" property_name="ThumbPosition" is_generic="false" instance_name="SliderGripper"></mutation>
+                    <field name="COMPONENT_SELECTOR">SliderGripper</field>
+                    <field name="PROP">ThumbPosition</field>
+                    <value name="VALUE"><block type="math_number"><field name="NUM">90</field></block></value>
+                    <next>
+                      <block type="controls_forRange">
+                        <field name="VAR">i</field>
+                        <value name="START"><block type="math_number"><field name="NUM">1</field></block></value>
+                        <value name="END"><block type="math_number"><field name="NUM">4</field></block></value>
+                        <value name="STEP"><block type="math_number"><field name="NUM">1</field></block></value>
+                        <statement name="DO">
+                          <block type="procedures_callnoreturn">
+                            <mutation name="moveServo"><arg name="n"></arg><arg name="pos"></arg></mutation>
+                            <field name="PROCNAME">moveServo</field>
+                            <value name="ARG0"><block type="lexical_variable_get"><field name="VAR">i</field></block></value>
+                            <value name="ARG1"><block type="math_number"><field name="NUM">90</field></block></value>
+                          </block>
+                        </statement>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="component_event" x="1100" y="20">
+    <comment pinned="false" h="120" w="300">เมื่อเกิดข้อผิดพลาดใดๆ ในแอป (เช่น การเชื่อมต่อหลุดระหว่างส่งข้อมูล): เปลี่ยนสถานะเป็นสีแดงและแสดงข้อความแจ้งเตือน</comment>
+    <mutation component_type="Form" is_generic="false" instance_name="Screen1" event_name="ErrorOccurred"></mutation>
+    <field name="COMPONENT_SELECTOR">Screen1</field>
+    <statement name="DO">
+      <block type="component_set_get">
+        <mutation component_type="Label" set_or_get="set" property_name="Text" is_generic="false" instance_name="LabelStatus"></mutation>
+        <field name="COMPONENT_SELECTOR">LabelStatus</field>
+        <field name="PROP">Text</field>
+        <value name="VALUE"><block type="text"><field name="TEXT">สถานะ: การเชื่อมต่อหลุด กรุณาเชื่อมต่อใหม่</field></block></value>
+        <next>
+          <block type="component_set_get">
+            <mutation component_type="Label" set_or_get="set" property_name="TextColor" is_generic="false" instance_name="LabelStatus"></mutation>
+            <field name="COMPONENT_SELECTOR">LabelStatus</field>
+            <field name="PROP">TextColor</field>
+            <value name="VALUE"><block type="math_number"><field name="NUM">-3790808</field></block></value>
+            <next>
+              <block type="component_method">
+                <mutation component_type="Notifier" method_name="ShowAlert" is_generic="false" instance_name="Notifier1"></mutation>
+                <field name="COMPONENT_SELECTOR">Notifier1</field>
+                <value name="ARG0">
+                  <block type="text_join">
+                    <mutation items="2"></mutation>
+                    <value name="ADD0"><block type="text"><field name="TEXT">เกิดข้อผิดพลาด: </field></block></value>
+                    <value name="ADD1"><block type="lexical_variable_get"><mutation><eventparam name="message"></eventparam></mutation><field name="VAR">message</field></block></value>
+                  </block>
+                </value>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <yacodeblocks ya-version="230" language-version="37"></yacodeblocks>
+</xml>

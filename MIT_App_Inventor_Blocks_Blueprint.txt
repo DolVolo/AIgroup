@@ -1,0 +1,72 @@
+ROBOT ARM BT4 — MIT APP INVENTOR BLOCKS BLUEPRINT
+
+COMPONENTS
+LabelTitle
+LabelStatus
+ListPickerBT
+SliderBase / LabelBase
+SliderShoulder / LabelShoulder
+SliderElbow / LabelElbow
+SliderGripper / LabelGripper
+ButtonOpen / ButtonClose / ButtonReset
+BluetoothClient1
+Notifier1
+
+SLIDERS: MinValue=0, MaxValue=180, ThumbPosition=90
+
+GLOBAL VARIABLES
+BaseAngle=90
+ShoulderAngle=90
+ElbowAngle=90
+GripperAngle=90
+
+CONNECT
+when ListPickerBT.BeforePicking
+  set ListPickerBT.Elements to BluetoothClient1.AddressesAndNames
+
+when ListPickerBT.AfterPicking
+  if BluetoothClient1.Connect(ListPickerBT.Selection)
+    set LabelStatus.Text to "Connected"
+  else
+    set LabelStatus.Text to "Connection failed"
+
+SEND
+when SliderBase.PositionChanged(thumbPosition)
+  set global BaseAngle to round(thumbPosition)
+  set LabelBase.Text to join("Base: ", global BaseAngle, "°")
+  if BluetoothClient1.IsConnected
+    call BluetoothClient1.SendText(join("S1:", global BaseAngle, "
+"))
+
+when SliderShoulder.PositionChanged(thumbPosition)
+  set global ShoulderAngle to round(thumbPosition)
+  set LabelShoulder.Text to join("Shoulder: ", global ShoulderAngle, "°")
+  if BluetoothClient1.IsConnected
+    call BluetoothClient1.SendText(join("S2:", global ShoulderAngle, "
+"))
+
+when SliderElbow.PositionChanged(thumbPosition)
+  set global ElbowAngle to round(thumbPosition)
+  set LabelElbow.Text to join("Elbow: ", global ElbowAngle, "°")
+  if BluetoothClient1.IsConnected
+    call BluetoothClient1.SendText(join("S3:", global ElbowAngle, "
+"))
+
+when SliderGripper.PositionChanged(thumbPosition)
+  set global GripperAngle to round(thumbPosition)
+  set LabelGripper.Text to join("Gripper: ", global GripperAngle, "°")
+  if BluetoothClient1.IsConnected
+    call BluetoothClient1.SendText(join("S4:", global GripperAngle, "
+"))
+
+BUTTONS
+Open  -> SliderGripper.ThumbPosition=150 -> Send "S4:150
+"
+Close -> SliderGripper.ThumbPosition=60  -> Send "S4:60
+"
+Reset -> all sliders=90 -> Send S1:90, S2:90, S3:90, S4:90
+
+BLUETOOTH
+Set BluetoothClient1.DelimiterByte = 10.
+On Android 12+, App Inventor may request BLUETOOTH_CONNECT/SCAN permissions.
+Pair HC-06 in Android Settings first, then select it in ListPicker.
